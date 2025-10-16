@@ -1,0 +1,27 @@
+    apiVersion: serving.knative.dev/v1
+    kind: Service
+    metadata:
+      name: identity-api
+      namespace: ksquare-mchavez # Optional, if not specified, it uses the default namespace
+    spec:
+      template:
+        spec:
+          containers:
+            - image: gcr.io/ksquare-mchavez/identity-api
+            # - image: gcr.io/ksquare-mchavez/identity-api:v1
+              env:
+                - name: GCP_IDENTITY_API_KEY
+                  value: "{GCP_IDENTITY_API_KEY}"
+                - name: GCP_PROJECT_ID
+                  value: "{GCP_PROJECT_ID}"
+                - name: GCP_SHOW_PUBLIC_KEYS
+                  value: "false"
+              resources:
+                limits:
+                  memory: "256Mi"
+                  cpu: "1"
+          containerConcurrency: 80 # Max concurrent requests per container instance
+          timeoutSeconds: 300 # Max request timeout
+      traffic:
+        - percent: 100
+          latestRevision: true

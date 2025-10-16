@@ -1,0 +1,82 @@
+swagger: '2.0'
+info:
+  title: Identity Platform Secured API
+  description: API Gateway configuration for a Cloud Run backend protected by Identity Platform
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+
+paths:
+  /login:
+    post:
+      summary: Public login endpoint
+      description: Public route used by clients to authenticate and obtain an ID token.
+      operationId: loginUser
+      security: [] # No auth required, Public route → no JWT check
+      x-google-backend:
+        address: {{GCP_CLOUD_RUN_URL}}/login
+      responses:
+        '200':
+          description: Successful login
+          
+  /signup:
+    post:
+      operationId: signupUser
+      security: []  # No auth required
+      x-google-backend:
+        address: {{GCP_CLOUD_RUN_URL}}/signup
+      responses:
+        '200':
+          description: Successful signup
+          
+  /secure/decode-token:
+    get:
+      summary: Protected endpoint
+      description: Only accessible with a valid Identity Platform JWT
+      operationId: getSecureDecodeToken
+      responses:
+        '200':
+          description: Successful response
+      security:
+        - idp_auth: [] # Require JWT validation
+      x-google-backend:
+        address: {{GCP_CLOUD_RUN_URL}}/secure/decode-token
+      # In Google Cloud API Gateway, when you configure a backend using the x-google-backend directive,
+      # the gateway does not forward the original Authorization header to your backend by default.
+      # Instead, it injects its own service-to-service identity token (to authenticate itself to the backend).
+      # To get the original Authorization header (the one sent by the client),
+      # you have to preserve it explicitly by copying it into another header before it’s replaced.
+      x-google-extensions:
+        request:
+          headers:
+            - name: "Authorization"
+              renameTo: "X-Original-Authorization"
+
+  /secure/public-key:
+    get:
+      summary: Protected endpoint
+      description: Only accessible with a valid Identity Platform JWT
+      operationId: getSecurePublicKey
+      responses:
+        '200':
+          description: Successful response
+      security:
+        - idp_auth: []  # Require JWT validation
+      x-google-backend:
+        address: {{GCP_CLOUD_RUN_URL}}/secure/public-key
+      x-google-extensions:
+        request:
+          headers:
+            - name: "Authorization"
+              renameTo: "X-Original-Authorization"
+
+securityDefinitions:
+  idp_auth:
+    type: oauth2
+    flow: implicit
+    authorizationUrl: "https://demo.com"  # required dummy value for OpenAPI 2
+    x-google-issuer: "https://securetoken.google.com/{{GCP_PROJECT_ID}}"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "{{GCP_PROJECT_ID}}"

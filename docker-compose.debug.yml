@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  gcp-identity-platform-debug:
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+    ports:
+      - "8080:8080"
+      - "40000:40000"
+    env_file:
+      - .env
+    restart: unless-stopped
